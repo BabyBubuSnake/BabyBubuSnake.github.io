@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panda Food Catch Game</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { text-align: center; }
+    canvas { background: #cce6ff; display: block; margin: 0 auto; border: 2px solid #000; position: relative; }
+    #gameOverImage {
+      position: absolute;
+      top: 40%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      display: none;
+      width: 200px;
+    }
+    #restartBtn {
+      position: absolute;
+      top: 65%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      display: none;
+      padding: 10px 20px;
+      font-size: 18px;
+      background-color: #ff4d6d;
+      border: none;
+      border-radius: 30px;
+      color: white;
+      cursor: pointer;
+    }
+    #gameContainer { position: relative; width: 400px; margin: 0 auto; }
+  </style>
+</head>
+<body>
+<div id="gameContainer">
+  <canvas id="gameCanvas" width="400" height="600"></canvas>
+  <img id="gameOverImage" src="dudu.png" alt="Game Over Image">
+  <button id="restartBtn">Try Again</button>
+</div>
+<script>
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+  const gameOverImage = document.getElementById('gameOverImage');
+  const restartBtn = document.getElementById('restartBtn');
+
+  const pandaImg = new Image();
+  pandaImg.src = 'bubu.png';
+
+  const heartImg = new Image();
+  heartImg.src = 'https://cdn-icons-png.flaticon.com/512/833/833472.png';
+
+  const foodImageSources = [
+    'https://cdn-icons-png.flaticon.com/512/135/135620.png',
+    'https://cdn-icons-png.flaticon.com/512/135/135651.png',
+    'https://cdn-icons-png.flaticon.com/512/1046/1046784.png',
+    'https://cdn-icons-png.flaticon.com/512/590/590685.png',
+    'https://cdn-icons-png.flaticon.com/512/590/590696.png',
+    'https://cdn-icons-png.flaticon.com/512/590/590767.png',
+    'https://cdn-icons-png.flaticon.com/512/1046/1046782.png',
+    'https://cdn-icons-png.flaticon.com/512/3075/3075977.png'
+  ];
+
+  const foodImages = foodImageSources.map(src => {
+    const img = new Image();
+    img.src = src;
+    return img;
+  });
+
+  const panda = { x: 160, y: 480, width: 120, height: 120, speed: 10 };
+  let foodList = [];
+  let score = 0;
+  let lives = 3;
+  let gameOver = false;
+let gameTime = 0;
+
+  function createFood() {
+    if (gameOver) return;
+    const size = 50;
+    const img = foodImages[Math.floor(Math.random() * foodImages.length)];
+    foodList.push({
+      x: Math.random() * (canvas.width - size),
+      y: -size,
+      size: size,
+      speed: 2 + Math.random() * 2,
+      image: img
+    });
+  }
+
+  function drawPanda() {
+    ctx.drawImage(pandaImg, panda.x, panda.y, panda.width, panda.height);
+  }
+
+  function drawFood() {
+    foodList.forEach(food => {
+      ctx.drawImage(food.image, food.x, food.y, food.size, food.size);
+    });
+  }
+
+  function drawScoreAndLives() {
+    ctx.fillStyle = 'black';
+    ctx.font = '20px Arial';
+    ctx.fillText('Score: ' + score, 10, 30);
+    for (let i = 0; i < lives; i++) {
+      ctx.drawImage(heartImg, 300 + i * 30, 10, 25, 25);
+    }
+  }
+
+  function updateFood() {
+    gameTime++;
+    const speedBoost = 1 + gameTime / 2000;
+    for (let i = foodList.length - 1; i >= 0; i--) {
+      const food = foodList[i];
+      food.y += food.speed * speedBoost;
+
+      if (
+        food.y + food.size >= panda.y &&
+        food.x + food.size > panda.x &&
+        food.x < panda.x + panda.width
+      ) {
+        foodList.splice(i, 1);
+        score++;
+      } else if (food.y > canvas.height) {
+        foodList.splice(i, 1);
+        lives--;
+        if (lives <= 0) {
+          gameOver = true;
+        }
+      }
+    }
+  }
+
+  function gameLoop() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawPanda();
+    drawFood();
+    drawScoreAndLives();
+    updateFood();
+    if (gameOver) {
+      gameOverImage.style.display = 'block';
+      restartBtn.style.display = 'block';
+    } else {
+      requestAnimationFrame(gameLoop);
+    }
+  }
+
+  let keys = {};
+  document.addEventListener('keydown', e => keys[e.key] = true);
+  document.addEventListener('keyup', e => keys[e.key] = false);
+
+  function handleMovement() {
+    if (keys['ArrowLeft']) panda.x -= panda.speed;
+    if (keys['ArrowRight']) panda.x += panda.speed;
+    panda.x = Math.max(0, Math.min(canvas.width - panda.width, panda.x));
+  }
+
+  setInterval(() => {
+    createFood();
+  }, 800);
+
+  setInterval(() => {
+    if (!gameOver) handleMovement();
+  }, 16);
+
+  restartBtn.addEventListener('click', () => {
+    gameTime = 0;
+    score = 0;
+    lives = 3;
+    foodList = [];
+    gameOver = false;
+    gameOverImage.style.display = 'none';
+    restartBtn.style.display = 'none';
+    requestAnimationFrame(gameLoop);
+  });
+
+  pandaImg.onload = () => gameLoop();
+</script>
+</body>
+</html>
